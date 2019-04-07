@@ -14,8 +14,10 @@ class State:
         State.count += 1
 
     def __str__(self):
-        vals = ', '.join(self.values)
-        return str(self.id) + ': ' + vals
+        i = "I(" + ', '.join(self.values[0:2]) + '), '
+        o = "O(" + ', '.join(self.values[2:4]) + '), '
+        v = "V(" + ', '.join(self.values[4:6]) + ')'
+        return str(self.id) + ': ' + i + o + v
 
     def check_validity(self):
         if self.values[0] not in State.i_values or self.values[1] not in State.d_values\
