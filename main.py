@@ -1,4 +1,5 @@
 import sys
+import itertools
 
 
 def read_quantity_input_file():
@@ -21,7 +22,8 @@ def init_states():
     outflow = {'magnitude': ['0', '+'], 'derivative': ['-', '0', '+']}
     quantities_labels = ['inflow', 'volume', 'outflow']
     quantities = [inflow['magnitude'], inflow['derivative'], volume['magnitude'], volume['derivative'], outflow['magnitude'], outflow['derivative']]
-    permutations = list(zip(quantities))
+    # permutations = list(zip(quantities))
+    permutations = itertools.permutations(quantities)
     for p in permutations:
         print(p)
     return permutations
