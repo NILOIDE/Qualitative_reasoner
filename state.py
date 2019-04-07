@@ -49,32 +49,34 @@ class State:
 
     def next(self, v_idx):
         v_new = None
+        current = self.values[v_idx]
         if v_idx in [1, 3, 5]:
-            d_idx = State.d_values.index(self.values[v_idx])
+            d_idx = State.d_values.index(current)
             new_idx = max(0, min(d_idx + 1, 2))
             v_new = State.d_values[new_idx]
         elif v_idx == 0:
-            i_idx = State.i_values.index(self.values[v_idx])
+            i_idx = State.i_values.index(current)
             new_idx = max(0, min(i_idx + 1, 1))
             v_new = State.i_values[new_idx]
         elif v_idx in [2, 4]:
-            ov_idx = State.ov_values.index(self.values[v_idx])
+            ov_idx = State.ov_values.index(current)
             new_idx = max(0, min(ov_idx + 1, 2))
             v_new = State.ov_values[new_idx]
-        return v_new
+        return v_new if v_new != current else None
 
     def previous(self, v_idx):
         v_new = None
+        current = self.values[v_idx]
         if v_idx in [1, 3, 5]:
-            d_idx = State.d_values.index(self.values[v_idx])
+            d_idx = State.d_values.index(current)
             new_idx = max(0, min(d_idx - 1, 2))
             v_new = State.d_values[new_idx]
         elif v_idx == 0:
-            i_idx = State.i_values.index(self.values[v_idx])
+            i_idx = State.i_values.index(current)
             new_idx = max(0, min(i_idx - 1, 1))
             v_new = State.i_values[new_idx]
         elif v_idx in [2, 4]:
-            ov_idx = State.ov_values.index(self.values[v_idx])
+            ov_idx = State.ov_values.index(current)
             new_idx = max(0, min(ov_idx - 1, 2))
             v_new = State.ov_values[new_idx]
-        return v_new
+        return v_new if v_new != current else None
