@@ -7,6 +7,8 @@ __pycache__/
 *.so
 
 # PyCharm
+.idea/
+
 
 # Distribution / packaging
 .Python
@@ -104,3 +106,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
