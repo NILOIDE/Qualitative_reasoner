@@ -8,10 +8,12 @@ class State:
     # Count of all states, so we can have unique IDs
     count = 0
 
-    def __init__(self, i_v, i_d, o_v, o_d, v_v, v_d):
-        self.values = [i_v, i_d, o_v, o_d, v_v, v_d]
+    def __init__(self, values):
+        self.values = values
         self.id = State.count
         State.count += 1
+        self.inputs = []
+        self.outputs = []
 
     def __str__(self):
         i = "I(" + ', '.join(self.values[0:2]) + '), '
@@ -27,3 +29,15 @@ class State:
 
     def get_id(self):
         return self.id
+
+    def add_input(self, input_state):
+        self.inputs.append(input_state)
+
+    def get_inputs(self):
+        return self.inputs
+
+    def add_output(self, output_state):
+        self.outputs.append(output_state)
+
+    def get_outputs(self):
+        return self.outputs

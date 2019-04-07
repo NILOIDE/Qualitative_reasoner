@@ -2,6 +2,8 @@ import sys
 import itertools
 import numpy as np
 
+from state import State
+
 
 def remove_illegal_states(states):
     rules = np.loadtxt('elimination_rules.txt', comments='#', dtype=str, delimiter=' ')
@@ -38,11 +40,13 @@ def init_states():
 
 
 def run(args):
-    states = init_states()
-    remove_illegal_states(states)
-    for p in states:
-        print(p)
-    
+    raw_states = init_states()
+    remove_illegal_states(raw_states)
+    states = []
+    for p in raw_states:
+        states.append(State(p))
+    for s in states:
+        print(s)
 
 
 if __name__ == '__main__':

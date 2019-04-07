@@ -1,6 +1,28 @@
+# inflow can't increase or decrease
 * - * * * *
 * + * * * *
-* * max + * *
-* * * * max +
-* * 0 - * *
-* * * * 0 -
+# I+(Inflow, Volume)
+# + * * * * - <- outflow may be bigger
+# 0 * * * * +
+# I–(Outflow, Volume)
+# * * + * * + <- inflow may be bigger
+# * * 0 * * -
+# P+(Volume, Outflow)
+# consider that inflow only has derivative 0
+# * * * + * 0
+# * * * + * -
+# * * * 0 * +
+# * * * 0 * -
+# * * * - * +
+# * * * - * 0
+# VC(Volume(max), Outflow(max))
+* * + * max *
+* * 0 * max *
+* * max * + *
+* * max * 0 *
+# VC(Volume(0), Outflow(0))
+* * max * 0 *
+* * + * 0 *
+* * 0 * max *
+* * 0 * + *
+# Additional rules
