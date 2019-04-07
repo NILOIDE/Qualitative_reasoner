@@ -42,6 +42,7 @@ def run(args):
     remove_illegal_states(states)
     for p in states:
         print(p)
+    print(len(states), "states remaining")
 
 
 if __name__ == '__main__':
