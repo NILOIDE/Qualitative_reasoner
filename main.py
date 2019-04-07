@@ -2,6 +2,13 @@ import sys
 import itertools
 
 
+def remove_illegal_states(states, file_name):
+    with open(file_name, 'r') as file:
+        for i, line in enumerate(file):
+            print(len(line))
+            for j in range(len(line)):
+                print(line[j])
+
 def init_states():
     # data = read_quantity_input_file()
     derivative = ['-', '0', '+']
@@ -16,6 +23,7 @@ def init_states():
 
 def run(args):
     states = init_states()
+    state = remove_illegal_states(states, args[0])
     for p in states:
         print(p)
 
