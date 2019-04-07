@@ -1,16 +1,32 @@
 import sys
 import itertools
+import numpy as np
 
 
-def remove_illegal_states(states, file_name):
-    with open(file_name, 'r') as file:
-        for i, line in enumerate(file):
-            print(len(line))
-            for j in range(len(line)):
-                print(line[j])
+def remove_illegal_states(states):
+    rules = np.loadtxt('elimination_rules.txt', comments='#', dtype=str, delimiter=' ')
+    to_be_removed = []
+    for state in states:
+        for rule in rules:
+            if len(rule) == 0:
+                continue
+            decision = True  # State is to be removed unless proved innocent
+            for i, item in enumerate(rule):
+                if item == '*':
+                    continue
+                # If an item in the rule is different from item in the state, state is not removed
+                elif item != state[i]:
+                    decision = False
+                    break
+            # If a state matches even 1 rule, it is to be removed
+            if decision:
+                to_be_removed.append(state)
+                break
+    for s in to_be_removed:
+        states.remove(s)
+
 
 def init_states():
-    # data = read_quantity_input_file()
     derivative = ['-', '0', '+']
     inflow = ['0', '+']
     volume = ['0', '+', 'max']
@@ -18,12 +34,12 @@ def init_states():
     quantities_labels = ['inflow', 'volume', 'outflow']
     quantities = [inflow, derivative, volume, derivative, outflow, derivative]
     permutations = itertools.product(*quantities)
-    return permutations
+    return list(permutations)
 
 
 def run(args):
     states = init_states()
-    state = remove_illegal_states(states, args[0])
+    remove_illegal_states(states)
     for p in states:
         print(p)
 
