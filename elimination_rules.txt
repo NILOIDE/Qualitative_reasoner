@@ -3,18 +3,18 @@
 * + * * * *
 # I+(Inflow, Volume)
 # + * * * * - <- outflow may be bigger
-# 0 * * * * +
+0 * * * * +
 # I–(Outflow, Volume)
 # * * + * * + <- inflow may be bigger
-# * * 0 * * -
+* * 0 * * -
 # P+(Volume, Outflow)
 # consider that inflow only has derivative 0
-# * * * + * 0
-# * * * + * -
-# * * * 0 * +
-# * * * 0 * -
-# * * * - * +
-# * * * - * 0
+* * * + * 0
+* * * + * -
+* * * 0 * +
+* * * 0 * -
+* * * - * +
+* * * - * 0
 # VC(Volume(max), Outflow(max))
 * * + * max *
 * * 0 * max *
