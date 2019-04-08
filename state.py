@@ -29,7 +29,7 @@ class State:
             i = "I(" + ', '.join(out_values[0:2]) + '), '
             o = "O(" + ', '.join(out_values[2:4]) + '), '
             v = "V(" + ', '.join(out_values[4:6]) + ')'
-            id_str = str(out_id) if self.id > 9 else '0' + str(self.id)
+            id_str = str(out_id) if out_id > 9 else '0' + str(out_id)
             out_string = out_string + '\t' + id_str + ': ' + i + o + v + '\n'
         return state_string + out_string
 
