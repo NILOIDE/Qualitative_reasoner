@@ -63,9 +63,9 @@ def determine_transitions(states, labels, dependencies, constraints):
                 continue
             possible_changes = {'decrease': False, 'increase': False}
             for d in dependencies[influenced]:
+                influencer_idx = labels.index(dependencies[d][0])
                 if state_values[influencer_idx] == '0':
                     continue
-                influencer_idx = labels.index(dependencies[d][0])
                 print(influencer_idx)
                 if dependencies[d][0] % 2 == 0:                 # If it is an influence
                     if state_values[influencer_idx] == dependencies[d][1]:
@@ -99,26 +99,11 @@ def determine_transitions(states, labels, dependencies, constraints):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-                
-
         # 2. Check for point value changes
         for influenced, values in enumerate(state_values):
             if influenced % 2 == 0:
                 continue
-            if
+
 
 def run(args):
     raw_states, q_labels = init_states()
