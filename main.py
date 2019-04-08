@@ -54,10 +54,12 @@ def create_dependencies(q_labels):
 
 
 def assign_outputs(states, s, raw_outputs, constraints):
-    # currently not using constraints argument
     for raw_output in raw_outputs:
-        if raw_output[4] in ['max', '0']:
-            raw_output[2] = raw_output[4]
+        # Apply VC constraints (currently not using constraints argument)
+        for c in constraints:
+            if raw_output[constraints[c][1]] == constraints[c][2]:
+                raw_output[c] = constraints[c][0]
+        # Put corresponding states in this state's outputs
         for state in states:
             if state.is_equal(raw_output):
                 s.add_output(state)
