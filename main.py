@@ -53,56 +53,93 @@ def create_dependencies(q_labels):
     return dependencies, constraints
 
 
+def assign_outputs(outputs):
+    pass
+
+
 def determine_transitions(states, labels, dependencies, constraints):
     for state in states:
         possible_outputs = []
+        # TODO: value constraints
         # 1. Check for changes in derivatives
         state_values = state.values
-        for influenced, value in enumerate(state_values):
-            if influenced % 2 != 0:
+        possible_derivative_changes = {'decrease': False, 'increase': False}
+
+        for influenced_idx, value in enumerate(state_values):
+            if influenced_idx % 2 != 0:  # There are no dependencies for magnitudes
                 continue
-            possible_changes = {'decrease': False, 'increase': False}
-            for d in dependencies[influenced]:
+            for d in dependencies[influenced_idx]:
                 influencer_idx = labels.index(dependencies[d][0])
                 if state_values[influencer_idx] == '0':
                     continue
                 print(influencer_idx)
                 if dependencies[d][0] % 2 == 0:                 # If it is an influence
-                    if state_values[influencer_idx] == dependencies[d][1]:
-                        new_value = state.next(influenced)
-                        possible_changes['increase'] = True
-                    else:
-                        new_value = state.previous(influenced)
-                        possible_changes['decrease'] = True
-                else:                                           # If it is a proportion
                     if dependencies[d][1] == '+':
-                        new_value = state.next(influenced)
-                        possible_changes['increase'] = True
+                        if state.next(influenced_idx) is not None:
+                            possible_derivative_changes['increase'] = True
                     elif dependencies[d][1] == '-':
-                        new_value = state.previous(influenced)
-                        possible_changes['decrease'] = True
+                        if state.previous(influenced_idx) is not None:
+                            possible_derivative_changes['decrease'] = True
                     else:
                         print("You got a dependency wrong, bro!")
                         quit()
+                else:                                           # If it is a proportion
+                    if state_values[influencer_idx] == dependencies[d][1]:
+                        if state.next(influenced_idx) is not None:
+                            possible_derivative_changes['increase'] = True
+                    else:
+                        if state.previous(influenced_idx) is not None:
+                            possible_derivative_changes['decrease'] = True
 
-            if possible_changes['increase']:
-                new_values = copy.copy(state_values)
-                new_values[influenced] = new_value
-                possible_outputs.append(new_values)
-            if possible_changes['decrease']:
-                new_values = copy.copy(state_values)
-                new_values[influenced] = new_value
-                possible_outputs.append(new_values)
-            # TODO: Stay same
-            if not (possible_changes['increase'] and possible_changes['decrease']):
-                continue
-
-
+            if possible_derivative_changes['increase']:
+                new_state_values = copy.copy(state_values)
+                new_state_values[influenced_idx] = state.next(influenced_idx)
+                possible_outputs.append(new_state_values)
+            if possible_derivative_changes['decrease']:
+                new_state_values = copy.copy(state_values)
+                new_state_values[influenced_idx] = state.previous(influenced_idx)
+                possible_outputs.append(new_state_values)
+        # If there is the possibility of gradient changes counteracting, magnitude changes
+        # transitions should be considered
+        if not (possible_derivative_changes['increase'] and possible_derivative_changes['decrease']):
+            assign_outputs(possible_outputs, constraints)
+            continue
 
         # 2. Check for point value changes
-        for influenced, values in enumerate(state_values):
-            if influenced % 2 == 0:
+        possible_point_changes = []
+        for influenced_idx, value in enumerate(state_values):
+            if influenced_idx % 2 == 0:
                 continue
+            if value == 'max' and state_values[influenced_idx+1] == '-':
+                new_state_values = copy.copy(state_values)
+                new_state_values[influenced_idx] = state.previous(influenced_idx)
+                possible_outputs.append(new_state_values)
+                possible_point_changes = True
+            if value == '0' and state_values[influenced_idx+1] == '+':
+                new_state_values = copy.copy(state_values)
+                new_state_values[influenced_idx] = state.next(influenced_idx)
+                possible_outputs.append(new_state_values)
+                possible_point_changes = True
+        # If there are possible point value magnitude changes, there is no point looking for range value changes.
+        if possible_point_changes:
+            assign_outputs(possible_outputs, constraints)
+            continue
+
+        # 3. Check for range value changes
+        for influenced_idx, value in enumerate(state_values):
+            if influenced_idx % 2 == 0:
+                continue
+            if value == 'max' and state_values[influenced_idx+1] == '-':
+                new_state_values = copy.copy(state_values)
+                new_state_values[influenced_idx] = state.previous(influenced_idx)
+                possible_outputs.append(new_state_values)
+                possible_point_changes = True
+            if value == '0' and state_values[influenced_idx+1] == '+':
+                new_state_values = copy.copy(state_values)
+                new_state_values[influenced_idx] = state.next(influenced_idx)
+                possible_outputs.append(new_state_values)
+                possible_point_changes = True
+
 
 
 def run(args):
