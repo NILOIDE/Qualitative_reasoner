@@ -149,6 +149,19 @@ def determine_transitions(states, labels, dependencies, constraints):
                 possible_point_changes = True
 
 
+def get_unused_states(states):
+    # Returns states that don't have outputs and which are not outputs
+    states_set = set(states)
+    used_states_set = set()
+    for state in states:
+        outs = state.get_outputs()
+        if outs:
+            used_states_set.add(state)
+            for out in outs:
+                used_states_set.add(out)
+    return states_set - used_states_set
+
+
 def run(args):
     raw_states, q_labels = init_states()
     remove_illegal_states(raw_states)
