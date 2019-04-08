@@ -21,7 +21,20 @@ class State:
         o = "O(" + ', '.join(self.values[2:4]) + '), '
         v = "V(" + ', '.join(self.values[4:6]) + ')'
         id_str = str(self.id) if self.id > 9 else '0' + str(self.id)
-        return id_str + ': ' + i + o + v
+        state_string = id_str + ': ' + i + o + v + '\n'
+        out_string = ''
+        for out in self.outputs:
+            out_values = out.get_values()
+            out_id = out.get_id()
+            i = "I(" + ', '.join(out_values[0:2]) + '), '
+            o = "O(" + ', '.join(out_values[2:4]) + '), '
+            v = "V(" + ', '.join(out_values[4:6]) + ')'
+            id_str = str(out_id) if self.id > 9 else '0' + str(self.id)
+            out_string = out_string + '\t' + id_str + ': ' + i + o + v + '\n'
+        return state_string + out_string
+
+    def get_values(self):
+        return self.values
 
     def check_validity(self):
         if self.values[0] not in State.i_values or self.values[1] not in State.d_values\
