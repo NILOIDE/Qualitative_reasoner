@@ -55,7 +55,7 @@ def create_dependencies(q_labels):
 
 def assign_outputs(states, s, raw_outputs, constraints):
     for raw_output in raw_outputs:
-        # Apply VC constraints (currently not using constraints argument)
+        # Apply VC constraints
         for c in constraints:
             if raw_output[constraints[c][1]] == constraints[c][2]:
                 raw_output[c] = constraints[c][0]
