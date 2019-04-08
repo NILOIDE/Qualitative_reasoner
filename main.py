@@ -53,7 +53,15 @@ def create_dependencies(q_labels):
     return dependencies, constraints
 
 
-def assign_outputs(outputs):
+def assign_outputs(states, s, raw_outputs, constraints):
+    # 1. Apply VC constraints
+    for raw_output in raw_outputs:
+        if raw_output[4] in ['max', '0']:
+            raw_output[2] = raw_output[4]
+        for state in states:
+    # 2. Get a state per raw output
+
+    # 3. Apply raw_outputs to state
     pass
 
 
@@ -102,7 +110,7 @@ def determine_transitions(states, labels, dependencies, constraints):
         # If there is the possibility of gradient changes counteracting, magnitude changes
         # transitions should be considered
         if not (possible_derivative_changes['increase'] and possible_derivative_changes['decrease']):
-            assign_outputs(possible_outputs, constraints)
+            assign_outputs(states, state, possible_outputs, constraints)
             continue
 
         # 2. Check for point value changes
@@ -122,7 +130,7 @@ def determine_transitions(states, labels, dependencies, constraints):
                 possible_point_changes = True
         # If there are possible point value magnitude changes, there is no point looking for range value changes.
         if possible_point_changes:
-            assign_outputs(possible_outputs, constraints)
+            assign_outputs(states, state, possible_outputs, constraints)
             continue
 
         # 3. Check for range value changes
@@ -141,7 +149,6 @@ def determine_transitions(states, labels, dependencies, constraints):
                 possible_point_changes = True
 
 
-
 def run(args):
     raw_states, q_labels = init_states()
     remove_illegal_states(raw_states)
@@ -152,6 +159,7 @@ def run(args):
     for s in states:
         print(s)
     determine_transitions(states, q_labels, dependencies, constraints)
+
 
 if __name__ == '__main__':
     run(sys.argv)
