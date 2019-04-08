@@ -38,9 +38,8 @@ class State:
     def get_inputs(self):
         return self.inputs
 
-    def add_output(self, output_states):
-        for output_state in output_states:
-            self.outputs.append(output_state)
+    def add_output(self, output_state):
+        self.outputs.append(output_state)
 
     def get_outputs(self):
         return self.outputs
