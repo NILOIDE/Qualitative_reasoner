@@ -42,14 +42,18 @@ def init_states():
 
 def create_dependencies(q_labels):
     dependencies = {}
-    dependencies[q_labels.index('volume')*2+1] = [q_labels.index('inflow')*2, '+']
-    dependencies[q_labels.index('volume')*2+1] = [q_labels.index('outflow')*2, '-']
-    dependencies[q_labels.index('outflow')*2+1] = [q_labels.index('volume')*2+1, '+']
+    dependencies[q_labels.index('volume')*2+1] = []
+    dependencies[q_labels.index('volume')*2+1].append([q_labels.index('inflow')*2, '+'])
+    dependencies[q_labels.index('volume')*2+1].append([q_labels.index('outflow')*2, '-'])
+    dependencies[q_labels.index('outflow')*2+1] = []
+    dependencies[q_labels.index('outflow')*2+1].append([q_labels.index('volume')*2+1, '+'])
     constraints = {}
-    constraints[q_labels.index('volume')*2] = ['max', q_labels.index('outflow')*2, 'max']
-    constraints[q_labels.index('outflow')*2] = ['max', q_labels.index('volume')*2, 'max']
-    constraints[q_labels.index('volume')*2] = ['0', q_labels.index('outflow')*2, '0']
-    constraints[q_labels.index('outflow')*2] = ['0', q_labels.index('volume')*2, '0']
+    constraints[q_labels.index('volume')*2] = []
+    constraints[q_labels.index('outflow')*2] = []
+    constraints[q_labels.index('volume')*2].append(['max', q_labels.index('outflow')*2, 'max'])
+    constraints[q_labels.index('outflow')*2].append(['max', q_labels.index('outflow')*2, 'max'])
+    constraints[q_labels.index('volume')*2].append(['0', q_labels.index('outflow')*2, '0'])
+    constraints[q_labels.index('outflow')*2].append(['0', q_labels.index('outflow')*2, '0'])
     return dependencies, constraints
 
 
@@ -67,6 +71,7 @@ def assign_outputs(states, s, raw_outputs, constraints):
 
 def determine_transitions(states, labels, dependencies, constraints):
     for state in states:
+        print(state.get_id())
         possible_outputs = []
         # TODO: value constraints
         # 1. Check for changes in derivatives
@@ -74,10 +79,14 @@ def determine_transitions(states, labels, dependencies, constraints):
         possible_derivative_changes = {'decrease': False, 'increase': False}
 
         for influenced_idx, value in enumerate(state_values):
-            if influenced_idx % 2 != 0:  # There are no dependencies for magnitudes
+            if influenced_idx % 2 == 0:  # There are no dependencies for magnitudes
+                continue
+            if influenced_idx not in dependencies:
                 continue
             for d in dependencies[influenced_idx]:
-                influencer_idx = labels.index(dependencies[d][0])
+                print(d, dependencies, labels)
+                influencer_idx = dependencies[d][0]
+                print("a", state_values[influencer_idx])
                 if state_values[influencer_idx] == '0':
                     continue
                 print(influencer_idx)
@@ -116,7 +125,7 @@ def determine_transitions(states, labels, dependencies, constraints):
         # 2. Check for point value changes
         possible_point_changes = []
         for influenced_idx, value in enumerate(state_values):
-            if influenced_idx % 2 == 0:
+            if influenced_idx % 2 != 0:
                 continue
             if value == 'max' and state_values[influenced_idx+1] == '-':
                 new_state_values = copy.copy(state_values)
@@ -137,16 +146,19 @@ def determine_transitions(states, labels, dependencies, constraints):
         for influenced_idx, value in enumerate(state_values):
             if influenced_idx % 2 == 0:
                 continue
-            if value == 'max' and state_values[influenced_idx+1] == '-':
-                new_state_values = copy.copy(state_values)
-                new_state_values[influenced_idx] = state.previous(influenced_idx)
-                possible_outputs.append(new_state_values)
-                possible_point_changes = True
-            if value == '0' and state_values[influenced_idx+1] == '+':
-                new_state_values = copy.copy(state_values)
-                new_state_values[influenced_idx] = state.next(influenced_idx)
-                possible_outputs.append(new_state_values)
-                possible_point_changes = True
+            if value != 'max' and value != '0':
+                if state_values[influenced_idx+1] == '-':
+                    new_state_values = copy.copy(state_values)
+                    new_state_values[influenced_idx] = state.previous(influenced_idx)
+                    possible_outputs.append(new_state_values)
+                elif state_values[influenced_idx+1] == '+':
+                    new_state_values = copy.copy(state_values)
+                    new_state_values[influenced_idx] = state.next(influenced_idx)
+                    possible_outputs.append(new_state_values)
+                else:
+                    print("You got a dependency wrong, bro!")
+                    quit()
+        assign_outputs(states, state, possible_outputs, constraints)
 
 
 def get_unused_states(states):
