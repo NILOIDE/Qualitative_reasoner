@@ -58,10 +58,12 @@ def create_dependencies(q_labels):
 
 
 def assign_outputs(states, s, raw_outputs, constraints):
-    # currently not using constraints argument
     for raw_output in raw_outputs:
-        if raw_output[4] in ['max', '0']:
-            raw_output[2] = raw_output[4]
+        # Apply VC constraints
+        for c in constraints:
+            if raw_output[constraints[c][1]] == constraints[c][2]:
+                raw_output[c] = constraints[c][0]
+        # Put corresponding states in this state's outputs
         for state in states:
             if state.is_equal(raw_output):
                 s.add_output(state)
@@ -157,6 +159,19 @@ def determine_transitions(states, labels, dependencies, constraints):
                     print("You got a dependency wrong, bro!")
                     quit()
         assign_outputs(states, state, possible_outputs, constraints)
+
+
+def get_unused_states(states):
+    # Returns states that don't have outputs and which are not outputs
+    states_set = set(states)
+    used_states_set = set()
+    for state in states:
+        outs = state.get_outputs()
+        if outs:
+            used_states_set.add(state)
+            for out in outs:
+                used_states_set.add(out)
+    return states_set - used_states_set
 
 
 def run(args):
