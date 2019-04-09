@@ -92,33 +92,67 @@ def assign_outputs(states, s, raw_outputs, constraints):
             print("This state does not exist!", output)
 
 
+def set_unaffected_gradients_to_zero(new_state_values, dependencies):
+    change_has_been_made = False
+    for influenced_idx, value in enumerate(new_state_values):
+        if influenced_idx % 2 == 0:  # Dependencies only apply to derivatives
+            continue
+        if value == '0':
+            continue
+        all_dependencies_are_zero = True
+        if influenced_idx in dependencies:
+            for d in dependencies[influenced_idx]:
+                influencer_idx = d[0]
+                if new_state_values[influencer_idx] != '0':
+                    all_dependencies_are_zero = False
+                    break
+        if all_dependencies_are_zero:
+            print('before', new_state_values)
+            new_state_values[influenced_idx] = '0'
+            print('after', new_state_values)
+            change_has_been_made = True
+    return new_state_values, change_has_been_made
+
+
+def make_point_value_changes(state_values, state):
+    change_has_been_made = False
+    for influenced_idx, value in enumerate(state_values):
+        if influenced_idx % 2 != 0:  # Only magnitudes are being checked here
+            continue
+        if state_values[influenced_idx + 1] == '0':  # If derivative is 0, nothing is going to change
+            continue
+        if value == 'max' and state_values[influenced_idx + 1] == '-':
+            state_values[influenced_idx] = state.previous(influenced_idx)
+            change_has_been_made = True
+        if value == '0' and state_values[influenced_idx + 1] == '+':
+            state_values[influenced_idx] = state.next(influenced_idx)
+            change_has_been_made = True
+
+    return state_values, change_has_been_made
+
+
 def determine_transitions(states, dependencies, constraints):
     for state in states:
         state_values = state.values
         print("state ", state.get_id(), ":")
         print(state_values, "\n")
-        # 1. Check for point value changes
         new_state_values = list(copy.copy(state_values))
-        possible_point_changes = False
-        for influenced_idx, value in enumerate(state_values):
-            if influenced_idx % 2 != 0:  # Only magnitudes are being checked here
-                continue
-            if state_values[influenced_idx + 1] == '0':  # If derivative is 0, nothing is going to change
-                continue
-            if value == 'max' and state_values[influenced_idx + 1] == '-':
-                new_state_values[influenced_idx] = state.previous(influenced_idx)
-                possible_point_changes = True
-            if value == '0' and state_values[influenced_idx + 1] == '+':
-                new_state_values[influenced_idx] = state.next(influenced_idx)
-                possible_point_changes = True
 
-        # 2. Check for derivative AND range value changes:
+        # 1. Set derivative to 0 if their dependencies are 0
+        derivative_change_has_been_made = True
+        while derivative_change_has_been_made:
+            new_state_values, derivative_change_has_been_made = set_unaffected_gradients_to_zero(new_state_values, dependencies)
+
+        # 2. Check for point value changes
+        new_state_values, point_value_change_has_been_made = make_point_value_changes(new_state_values, state)
+
+        # 3. Check for derivative changes:
         possible_values = {idx: {value} for idx, value in enumerate(new_state_values)}
         for influenced_idx, value in enumerate(state_values):
             # Check for changes in derivatives
             if influenced_idx % 2 == 0:  # There are no dependencies for magnitudes
                 continue
-            if influenced_idx not in dependencies:
+            if influenced_idx not in dependencies:  # If this derivative doesn't have dependencies, skip it
                 continue
             for d in dependencies[influenced_idx]:
                 influencer_idx = d[0]
@@ -142,39 +176,43 @@ def determine_transitions(states, dependencies, constraints):
                         if state.previous(influenced_idx) is not None:
                             possible_values[influenced_idx].add(state.previous(influenced_idx))
 
+        # 4. Check for range value changes (if point changes were not made
         # If there are possible point value magnitude changes, those changes will happen instantly, so there is
         # no point looking for range value changes.
-        if possible_point_changes:
-            possible_outputs = [list(i) for i in itertools.product(*[possible_values[key] for key in possible_values])]
-            if state_values in possible_outputs:
-                print("Original state shouldn't be in here.")
-                quit()
-            # possible_outputs.remove(state_values)
-            print(possible_values)
-            assign_outputs(states, state, possible_outputs, constraints)
-            continue
-        # Check for range value changes
-        for influenced_idx, value in enumerate(state_values):
-            if influenced_idx % 2 != 0:  # Only magnitudes are being checked here
-                continue
-            if state_values[influenced_idx+1] == '0':  # If derivative is 0, nothing is going to change
-                continue
-            if value == 'max' and value == '0':  # Point values were already checked earlier
-                print("Why is there a point value check here?", state_values)
-                quit()
-                continue
-            if state_values[influenced_idx+1] == '-':
-                if state.previous(influenced_idx) is not None:
-                    possible_values[influenced_idx].add(state.previous(influenced_idx))
-            elif state_values[influenced_idx+1] == '+':
-                if state.next(influenced_idx) is not None:
-                    possible_values[influenced_idx].add(state.next(influenced_idx))
-            else:
-                print("You got a dependency wrong, bro!")
-                quit()
+        if not point_value_change_has_been_made:
+            # possible_outputs = [list(i) for i in itertools.product(*[possible_values[key] for key in possible_values])]
+            # if state_values in possible_outputs:
+            # TODO: Make sure original states dont end up in their own outputs
+            #     print("Original state shouldn't be in here.")
+            #     quit()
+            # # possible_outputs.remove(state_values)
+            # print(possible_values)
+            # assign_outputs(states, state, possible_outputs, constraints)
+            # continue
+            # Check for range value changes
+            for influenced_idx, value in enumerate(state_values):
+                if influenced_idx % 2 != 0:  # Only magnitudes are being checked here
+                    continue
+                if state_values[influenced_idx+1] == '0':  # If derivative is 0, nothing is going to change
+                    continue
+                if value == 'max' and value == '0':  # Point values were already checked earlier
+                    print("Why is there a point value check here?", state_values)
+                    quit()
+                    continue
+                if state_values[influenced_idx+1] == '-':
+                    if state.previous(influenced_idx) is not None:
+                        possible_values[influenced_idx].add(state.previous(influenced_idx))
+                elif state_values[influenced_idx+1] == '+':
+                    if state.next(influenced_idx) is not None:
+                        possible_values[influenced_idx].add(state.next(influenced_idx))
+                else:
+                    print("You got a dependency wrong, bro!")
+                    quit()
         possible_outputs = [list(i) for i in itertools.product(*[possible_values[key] for key in possible_values])]
-        possible_outputs.remove(state_values)
         print(possible_values)
+
+        if state_values in possible_outputs:  # If original values are in output list, remove it
+            possible_outputs.remove(state_values)
         assign_outputs(states, state, possible_outputs, constraints)
         print("______________")
 
