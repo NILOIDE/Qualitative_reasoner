@@ -10,8 +10,8 @@ class State:
 
     def __init__(self, values):
         self.values = values
-        self.id = State.count
         State.count += 1
+        self.id = State.count
         self.inputs = []
         self.outputs = []
         self.check_validity()
@@ -20,8 +20,8 @@ class State:
         i = "I(" + ', '.join(self.values[0:2]) + '), '
         o = "O(" + ', '.join(self.values[2:4]) + '), '
         v = "V(" + ', '.join(self.values[4:6]) + ')'
-        id_str = str(self.id) if self.id > 9 else '0' + str(self.id)
-        state_string = id_str + ': ' + i + o + v + '\n'
+        id_str = str(self.id) if self.id > 9 else ' ' + str(self.id)
+        state_string = id_str + ': ' + i + o + v
         out_string = ''
         for out in self.outputs:
             out_values = out.get_values()
@@ -29,8 +29,8 @@ class State:
             i = "I(" + ', '.join(out_values[0:2]) + '), '
             o = "O(" + ', '.join(out_values[2:4]) + '), '
             v = "V(" + ', '.join(out_values[4:6]) + ')'
-            id_str = str(out_id) if out_id > 9 else '0' + str(out_id)
-            out_string = out_string + '\t' + id_str + ': ' + i + o + v + '\n'
+            id_str = str(out_id) if out_id > 9 else ' ' + str(out_id)
+            out_string = out_string + '\n\t' + id_str + ': ' + i + o + v
         return state_string + out_string
 
     def get_values(self):
@@ -97,3 +97,7 @@ class State:
 
     def current(self, v_idx):
         return self.values[v_idx]
+
+    def print_connections(self):
+        for output in self.outputs:
+            print(self.id, output.get_id())
