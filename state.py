@@ -94,3 +94,6 @@ class State:
             new_idx = max(0, min(ov_idx - 1, 2))
             v_new = State.ov_values[new_idx]
         return v_new if v_new != current else None
+
+    def current(self, v_idx):
+        return self.values[v_idx]
