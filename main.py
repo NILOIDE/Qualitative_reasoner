@@ -168,7 +168,6 @@ def make_point_value_changes(state_values, state):
 
 
 def add_possible_derivative_changes(state_values, dependencies, state, possible_values):
-    print(state_values, "Aaa")
     for influenced_idx, value in enumerate(state_values):
         # Check for changes in derivatives
         if influenced_idx % 2 == 0:  # There are no dependencies for magnitudes
@@ -281,7 +280,7 @@ def determine_transitions(states, dependencies, constraints):
                 o_final, derivative_change_has_been_made = fix_derivative_discrepancies(o, dependencies)
             # - Check for point value changes
             # TODO: Just added this next line
-            o_final, point_value_change_has_been_made = make_point_value_changes(o, State(new_state_values))
+            # o_final, point_value_change_has_been_made = make_point_value_changes(o, State(new_state_values))
             possible_final_outputs.append(o)
 
         print("Value possibilities:\n", possible_values)
