@@ -227,39 +227,42 @@ def determine_transitions(states, dependencies, constraints):
 
         derivative_change_has_been_made = True
         point_value_change_has_been_made = True
+        # Step 1: Check for derivative and point values that MUST change (non-stable states)
         while derivative_change_has_been_made and point_value_change_has_been_made:
-            # 1. Set derivative to 0 if their dependencies are 0
+            # - Set derivative to 0 if their dependencies are 0
             new_state_values, derivative_change_has_been_made = fix_derivative_discrepancies(new_state_values, dependencies)
-        # 2. Check for point value changes
+        # - Check for point value changes
         new_state_values, point_value_change_has_been_made = make_point_value_changes(new_state_values, state)
 
-        # 3. Check for derivative changes:
+        # Step 2. Check for ambiguous derivative and range value changes:
+        # - Check for derivative changes:
         possible_values = {idx: {value} for idx, value in enumerate(new_state_values)}
         add_possible_derivate_changes(new_state_values, dependencies, state, possible_values)
 
-        # 4. Check for range value changes (if point changes were not made
+        # - Check for range value changes (if point changes were not made
         # If there are possible point value magnitude changes, those changes will happen instantly, so there is
         # no point looking for range value changes.
         if not point_value_change_has_been_made:
             add_possible_range_value_changes(new_state_values, state, possible_values)
 
         possible_outputs = [list(i) for i in itertools.product(*[possible_values[key] for key in possible_values])]
+        # Step 3: Check for derivative and point values that MUST change (non-stable states)
         possible_final_outputs = []
         for o in possible_outputs:
             derivative_change_has_been_made = True
             point_value_change_has_been_made = True
             while derivative_change_has_been_made and point_value_change_has_been_made:
-                # 1. Set derivative to 0 if their dependencies are 0
+                # - Set derivative to 0 if their dependencies are 0
                 o_final, derivative_change_has_been_made = fix_derivative_discrepancies(o, dependencies)
-            # 2. Check for point value changes
+            # - Check for point value changes
             # TODO: Just added this next line
             o_final, point_value_change_has_been_made = make_point_value_changes(o, State(new_state_values))
             possible_final_outputs.append(o)
-        print("Value possibilities:\n", possible_values)
+        print("Value possibilities:\n", possible_final_outputs)
 
-        if state_values in possible_outputs:  # If original values are in output list, remove it
+        if state_values in possible_final_outputs:  # If original values are in output list, remove it
             possible_outputs.remove(state_values)
-        assign_outputs(states, state, possible_outputs, constraints)
+        assign_outputs(states, state, possible_final_outputs, constraints)
         print("______________")
 
 
