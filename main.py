@@ -298,6 +298,9 @@ def run(args):
     for s in unused:
         print("___________________________")
         print(s)
+    print("############## GRAPH ENCODING ##############")
+    for state in states:
+        state.print_connections()
 
 
 if __name__ == '__main__':

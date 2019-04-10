@@ -21,7 +21,7 @@ class State:
         o = "O(" + ', '.join(self.values[2:4]) + '), '
         v = "V(" + ', '.join(self.values[4:6]) + ')'
         id_str = str(self.id) if self.id > 9 else '0' + str(self.id)
-        state_string = id_str + ': ' + i + o + v + '\n'
+        state_string = id_str + ': ' + i + o + v
         out_string = ''
         for out in self.outputs:
             out_values = out.get_values()
@@ -30,7 +30,7 @@ class State:
             o = "O(" + ', '.join(out_values[2:4]) + '), '
             v = "V(" + ', '.join(out_values[4:6]) + ')'
             id_str = str(out_id) if out_id > 9 else '0' + str(out_id)
-            out_string = out_string + '\t' + id_str + ': ' + i + o + v + '\n'
+            out_string = out_string + '\n\t' + id_str + ': ' + i + o + v
         return state_string + out_string
 
     def get_values(self):
@@ -94,3 +94,7 @@ class State:
             new_idx = max(0, min(ov_idx - 1, 2))
             v_new = State.ov_values[new_idx]
         return v_new if v_new != current else None
+
+    def print_connections(self):
+        for output in self.outputs:
+            print(self.id, output.get_id())
