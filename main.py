@@ -258,7 +258,7 @@ def determine_transitions(states, dependencies, constraints):
             # TODO: Just added this next line
             o_final, point_value_change_has_been_made = make_point_value_changes(o, State(new_state_values))
             possible_final_outputs.append(o)
-        print("Value possibilities:\n", possible_final_outputs)
+        print("Value possibilities:\n", possible_values)
 
         if state_values in possible_final_outputs:  # If original values are in output list, remove it
             possible_outputs.remove(state_values)
