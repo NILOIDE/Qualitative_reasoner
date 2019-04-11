@@ -110,44 +110,69 @@ def set_unaffected_gradients_to_zero(state_values, dependencies):
     return state_values, change_has_been_made
 
 
-def fix_derivative_discrepancies(state_values, dependencies):
+def fix_derivative_discrepancies(state, dependencies, original_state_values):
     change_has_been_made = False
-    for influenced_idx, value in enumerate(state_values):
+    print("k-------")
+    print(state.values)
+    discrepancy_list = []
+    for influenced_idx, value in enumerate(state.values):
         if influenced_idx % 2 == 0:  # Dependencies only apply to derivatives
+            continue
+
+        if state.current(influenced_idx) != original_state_values[influenced_idx]:
             continue
         discrepancy_directions = set()
         if influenced_idx in dependencies:
             for d in dependencies[influenced_idx]:
                 influencer_idx = d[0]
-                if state_values[influencer_idx] == '0':
+                if state.current(influencer_idx) == '0':
                     continue
                 if d[0] % 2 == 0:  # If it is an influence
                     if d[1] == '+':
-                        discrepancy_directions.add('+')
+                        if state.next(influenced_idx-1) is not None:
+                            if state.next(influenced_idx) is not None:
+                                discrepancy_directions.add(state.next(influenced_idx))
+                            else:
+                                discrepancy_directions.add(state.current(influenced_idx))
                     elif d[1] == '-':
-                        discrepancy_directions.add('-')
+                        if state.previous(influenced_idx - 1) is not None:
+                            if state.previous(influenced_idx) is not None:
+                                discrepancy_directions.add(state.previous(influenced_idx))
+                            else:
+                                discrepancy_directions.add(state.current(influenced_idx))
+
                     else:
                         print("You got a dependency wrong, bro!")
                         quit()
                 else:  # If it is a proportion
-                    if state_values[influencer_idx] == d[1]:
-                        discrepancy_directions.add('+')
+                    if state.current(influencer_idx) == d[1]:
+                        if state.next(influenced_idx) is not None:
+                            discrepancy_directions.add(state.next(influenced_idx))
+                        else:
+                            discrepancy_directions.add(state.current(influenced_idx))
                     else:
-                        discrepancy_directions.add('-')
-            if len(discrepancy_directions) == 0:
-                if state_values[influenced_idx] != '0':
-                    state_values[influenced_idx] = '0'
-                    change_has_been_made = True
-            elif len(discrepancy_directions) == 1 and list(discrepancy_directions)[0] == '+':
-                if state_values[influenced_idx] == '0': # TODO: choice made here
-                    state_values[influenced_idx] = '+'
-                    change_has_been_made = True
-            elif len(discrepancy_directions) == 1 and list(discrepancy_directions)[0] == '-':
-                if state_values[influenced_idx] == '0':
-                    state_values[influenced_idx] = '-'
-                    change_has_been_made = True
+                        if state.previous(influenced_idx) is not None:
+                            discrepancy_directions.add(state.previous(influenced_idx))
+                        else:
+                            discrepancy_directions.add(state.current(influenced_idx))
 
-    return state_values, change_has_been_made
+        if len(discrepancy_directions) == 0:
+            if state.current(influenced_idx) != '0':
+                state.values[influenced_idx] = '0'
+                change_has_been_made = True
+        elif len(discrepancy_directions) == 1 and list(discrepancy_directions)[0] == '+':
+            # if state_values[influenced_idx] == '0': # TODO: choice made here
+            if state.next(influenced_idx) is not None:
+                state.values[influenced_idx] = state.next(influenced_idx)
+                change_has_been_made = True
+        elif len(discrepancy_directions) == 1 and list(discrepancy_directions)[0] == '-':
+            # if state_values[influenced_idx] == '0':
+            if state.previous(influenced_idx) is not None:
+                state.values[influenced_idx] = state.previous(influenced_idx)
+                change_has_been_made = True
+        print(state.values)
+
+    return state.values, change_has_been_made
 
 
 def make_point_value_changes(state_values, state):
@@ -234,54 +259,59 @@ def add_possible_range_value_changes(state_values, state, possible_values):
 
 def determine_transitions(states, dependencies, constraints):
     for state in states:
+        # if state.get_id() == 14:
+        #     quit()
         state_values = state.values
         print("state ", state.get_id(), ":")
         print(state_values, "\n")
         new_state_values = list(copy.copy(state_values))
 
-        derivative_change_has_been_made = True
-        point_value_change_has_been_made = True
         # Step 1: Check for derivative and point values that MUST change (non-stable states)
-        while derivative_change_has_been_made and point_value_change_has_been_made:
-            # - Set derivative to 0 if their dependencies are 0
-            new_state_values, derivative_change_has_been_made = fix_derivative_discrepancies(new_state_values, dependencies)
-        # - Check for point value changes
-        new_state_values, point_value_change_has_been_made = make_point_value_changes(new_state_values, state)
+        new_state_values, derivative_change_has_been_made = fix_derivative_discrepancies(State(new_state_values),
+                                                                                         dependencies, state_values)
+        if derivative_change_has_been_made:
+            while derivative_change_has_been_made :
+                # - Set derivative to 0 if their dependencies are 0
+                iter_values = copy.copy(new_state_values)
+                new_state_values, derivative_change_has_been_made = fix_derivative_discrepancies(State(iter_values),
+                                                                                             dependencies, state_values)
+            derivative_change_has_been_made = True
+            point_value_change_has_been_made = False
+        else:
+            # - Check for point value changes
+            new_state_values, point_value_change_has_been_made = make_point_value_changes(new_state_values, state)
 
         # Step 2. Check for ambiguous derivative and range value changes:
         possible_values = {idx: set() for idx, value in enumerate(new_state_values)}
         # If there are possible point value magnitude changes, those changes will happen instantly, so there is
         # no point looking for range value changes.
-        if not point_value_change_has_been_made:
-            # - Check for derivative changes:
-            add_possible_derivative_changes(new_state_values, dependencies, state, possible_values)
-
+        if not point_value_change_has_been_made and not derivative_change_has_been_made:
             # - Check for range value changes (if point changes were not made
             add_possible_range_value_changes(new_state_values, state, possible_values)
+            # - Check for derivative changes:
+        add_possible_derivative_changes(new_state_values, dependencies, state, possible_values)
 
         print("P", possible_values)
+        # If derivative possible values contains '+' and '-', then the possibility of '0' should be added
         possible_values = {idx: possible_values[idx] if idx % 2 == 0 or len(possible_values[idx]) < 2 else possible_values[idx].union({'0'})
                            for idx in possible_values}
         print("Ambiguous values:\n", possible_values)
+        # Added current values to values that haven't changed
         possible_values = {idx: {value} if possible_values[idx] == set() else possible_values[idx]
                            for idx, value in enumerate(new_state_values)}
-
+        # Create permutations
         possible_outputs = [list(i) for i in itertools.product(*[possible_values[key] for key in possible_values])]
-        # if state_values in possible_outputs:  # If original values are in output list, remove it
-        #     possible_outputs.remove(state_values)
 
         # Step 3: Check for derivative and point values that MUST change (non-stable states)
         possible_final_outputs = []
-        for o in possible_outputs:
+        for output in possible_outputs:
             derivative_change_has_been_made = True
-            point_value_change_has_been_made = True
-            while derivative_change_has_been_made and point_value_change_has_been_made:
+            while derivative_change_has_been_made:
                 # - Set derivative to 0 if their dependencies are 0
-                o_final, derivative_change_has_been_made = fix_derivative_discrepancies(o, dependencies)
+                output, derivative_change_has_been_made = fix_derivative_discrepancies(State(output), dependencies, state_values)
             # - Check for point value changes
             # TODO: Just added this next line
-            # o_final, point_value_change_has_been_made = make_point_value_changes(o, State(new_state_values))
-            possible_final_outputs.append(o)
+            possible_final_outputs.append(output)
 
         print("Value possibilities:\n", possible_values)
         assign_outputs(states, state, possible_final_outputs, constraints)
