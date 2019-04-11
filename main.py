@@ -51,9 +51,9 @@ def create_dependencies(q_labels):
     constraints[q_labels.index('volume')*2] = []
     constraints[q_labels.index('outflow')*2] = []
     constraints[q_labels.index('volume')*2].append(['max', q_labels.index('outflow')*2, 'max'])
-    constraints[q_labels.index('outflow')*2].append(['max', q_labels.index('outflow')*2, 'max'])
+    constraints[q_labels.index('outflow')*2].append(['max', q_labels.index('volume')*2, 'max'])
     constraints[q_labels.index('volume')*2].append(['0', q_labels.index('outflow')*2, '0'])
-    constraints[q_labels.index('outflow')*2].append(['0', q_labels.index('outflow')*2, '0'])
+    constraints[q_labels.index('outflow')*2].append(['0', q_labels.index('volume')*2, '0'])
     return dependencies, constraints
 
 
@@ -62,8 +62,8 @@ def assign_outputs(states, s, raw_outputs, constraints):
     for raw_output in raw_outputs:
         # Apply VC constraints
         for influencer_idx in range(len(raw_output)):
-            if raw_output[influencer_idx] == s.values[influencer_idx]:  # If the value was not modified
-                continue
+            # if raw_output[influencer_idx] == s.values[influencer_idx]:  # If the value was not modified
+            #     continue
             if influencer_idx not in constraints:
                 continue
             for c in constraints[influencer_idx]:
@@ -88,6 +88,7 @@ def assign_outputs(states, s, raw_outputs, constraints):
                 break
         if not state_exists:
             print("^This state does not exist!")
+            quit()
 
 
 def set_unaffected_gradients_to_zero(state_values, dependencies):
@@ -284,7 +285,7 @@ def determine_transitions(states, dependencies, constraints):
             # - Check for range value changes (if point changes were not made
             add_possible_range_value_changes(new_state_values, state, possible_values)
             # - Check for derivative changes:
-        add_possible_derivative_changes(new_state_values, dependencies, state, possible_values)
+            add_possible_derivative_changes(new_state_values, dependencies, state, possible_values)
 
         print("P", possible_values)
         # If derivative possible values contains '+' and '-', then the possibility of '0' should be added
