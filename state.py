@@ -61,6 +61,16 @@ class State:
     def is_equal(self, values):
         return self.values == values
 
+    def is_stable(self):
+        is_stable = True
+        for idx, value in enumerate(self.values):
+            if idx % 2== 0:
+                continue
+            if value != '0':
+                is_stable = False
+                break
+        return is_stable
+
     def next(self, v_idx):
         v_new = None
         current = self.values[v_idx]

@@ -112,9 +112,6 @@ def set_unaffected_gradients_to_zero(state_values, dependencies):
 
 def fix_derivative_discrepancies(state, dependencies, original_state_values):
     change_has_been_made = False
-    print("k-------")
-    print(state.values)
-    discrepancy_list = []
     for influenced_idx, value in enumerate(state.values):
         if influenced_idx % 2 == 0:  # Dependencies only apply to derivatives
             continue
@@ -170,7 +167,6 @@ def fix_derivative_discrepancies(state, dependencies, original_state_values):
             if state.previous(influenced_idx) is not None:
                 state.values[influenced_idx] = state.previous(influenced_idx)
                 change_has_been_made = True
-        print(state.values)
 
     return state.values, change_has_been_made
 
@@ -259,13 +255,12 @@ def add_possible_range_value_changes(state_values, state, possible_values):
 
 def determine_transitions(states, dependencies, constraints):
     for state in states:
-        # if state.get_id() == 14:
-        #     quit()
+
         state_values = state.values
         print("state ", state.get_id(), ":")
         print(state_values, "\n")
-        new_state_values = list(copy.copy(state_values))
 
+        new_state_values = list(copy.copy(state_values))
         # Step 1: Check for derivative and point values that MUST change (non-stable states)
         new_state_values, derivative_change_has_been_made = fix_derivative_discrepancies(State(new_state_values),
                                                                                          dependencies, state_values)
