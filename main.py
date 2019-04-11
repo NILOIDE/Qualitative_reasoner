@@ -113,10 +113,10 @@ def set_unaffected_gradients_to_zero(state_values, dependencies):
 
 def fix_derivative_discrepancies(state, dependencies, original_state_values):
     change_has_been_made = False
+    print(state.values)
     for influenced_idx, value in enumerate(state.values):
         if influenced_idx % 2 == 0:  # Dependencies only apply to derivatives
             continue
-
         if state.current(influenced_idx) != original_state_values[influenced_idx]:
             continue
         discrepancy_directions = set()
@@ -127,18 +127,15 @@ def fix_derivative_discrepancies(state, dependencies, original_state_values):
                     continue
                 if d[0] % 2 == 0:  # If it is an influence
                     if d[1] == '+':
-                        if state.next(influenced_idx-1) is not None:
-                            if state.next(influenced_idx) is not None:
-                                discrepancy_directions.add(state.next(influenced_idx))
-                            else:
-                                discrepancy_directions.add(state.current(influenced_idx))
+                        if state.next(influenced_idx) is not None:
+                            discrepancy_directions.add(state.next(influenced_idx))
+                        else:
+                            discrepancy_directions.add(state.current(influenced_idx))
                     elif d[1] == '-':
-                        if state.previous(influenced_idx - 1) is not None:
-                            if state.previous(influenced_idx) is not None:
-                                discrepancy_directions.add(state.previous(influenced_idx))
-                            else:
-                                discrepancy_directions.add(state.current(influenced_idx))
-
+                        if state.previous(influenced_idx) is not None:
+                            discrepancy_directions.add(state.previous(influenced_idx))
+                        else:
+                            discrepancy_directions.add(state.current(influenced_idx))
                     else:
                         print("You got a dependency wrong, bro!")
                         quit()
@@ -153,6 +150,7 @@ def fix_derivative_discrepancies(state, dependencies, original_state_values):
                             discrepancy_directions.add(state.previous(influenced_idx))
                         else:
                             discrepancy_directions.add(state.current(influenced_idx))
+        print(discrepancy_directions)
 
         if len(discrepancy_directions) == 0:
             if state.current(influenced_idx) != '0':
@@ -244,11 +242,13 @@ def add_possible_range_value_changes(state_values, state, possible_values):
         if state_values[influenced_idx + 1] == '-':
             if state.previous(influenced_idx) is not None:
                 possible_values[influenced_idx].add(state.previous(influenced_idx))
-            possible_values[influenced_idx].add(state.current(influenced_idx))
+            else:
+                possible_values[influenced_idx].add(state.current(influenced_idx))
         elif state_values[influenced_idx + 1] == '+':
             if state.next(influenced_idx) is not None:
                 possible_values[influenced_idx].add(state.next(influenced_idx))
-            possible_values[influenced_idx].add(state.current(influenced_idx))
+            else:
+                possible_values[influenced_idx].add(state.current(influenced_idx))
         else:
             print("You got a dependency wrong, bro!")
             quit()
@@ -349,6 +349,7 @@ def run(args):
     print("############## GRAPH ENCODING ##############")
     for state in states:
         state.print_connections()
+        print(state.is_stable())
 
 
 if __name__ == '__main__':
