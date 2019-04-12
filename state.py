@@ -34,8 +34,8 @@ class State:
                 id_str = str(out_id) if out_id > 9 else ' ' + str(out_id)
                 trace_str = ' '
                 for idx, t in enumerate(trace):
-                    previous_state = str(trace[idx-1]) if idx > 1 else str(self.id)
-                    trace_str += '\n           ' + previous_state + ' ->'
+                    previous_state = '  ' if idx > 0 else str(self.id)
+                    trace_str += '\n           ' + previous_state + ' --'
                     trace_str += t[0]
                     trace_str += t[1]
                 trace_str += '\n'
