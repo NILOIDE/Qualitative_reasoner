@@ -14,6 +14,7 @@ class State:
         self.id = State.count
         self.inputs = []
         self.outputs = []
+        self.output_traces = []
         self.check_validity()
 
     def __str__(self):
@@ -23,14 +24,22 @@ class State:
         id_str = str(self.id) if self.id > 9 else ' ' + str(self.id)
         state_string = id_str + ': ' + i + o + v
         out_string = ''
-        for out in self.outputs:
-            out_values = out.get_values()
-            out_id = out.get_id()
-            i = "I(" + ', '.join(out_values[0:2]) + '), '
-            o = "O(" + ', '.join(out_values[2:4]) + '), '
-            v = "V(" + ', '.join(out_values[4:6]) + ')'
-            id_str = str(out_id) if out_id > 9 else ' ' + str(out_id)
-            out_string = out_string + '\n\t' + id_str + ': ' + i + o + v
+        if self.outputs != []:
+            for out, trace in zip(self.outputs, self.output_traces):
+                out_values = out.get_values()
+                out_id = out.get_id()
+                i = "I(" + ', '.join(out_values[0:2]) + '), '
+                o = "O(" + ', '.join(out_values[2:4]) + '), '
+                v = "V(" + ', '.join(out_values[4:6]) + ')'
+                id_str = str(out_id) if out_id > 9 else ' ' + str(out_id)
+                trace_str = ' '
+                for idx, t in enumerate(trace):
+                    previous_state = str(trace[idx-1]) if idx > 1 else str(self.id)
+                    trace_str += '\n           ' + previous_state + ' ->'
+                    trace_str += t[0]
+                    trace_str += t[1]
+                trace_str += '\n'
+                out_string = out_string + '\n\t' + id_str + ': ' + i + o + v + trace_str
         return state_string + out_string
 
     def get_values(self):
@@ -52,11 +61,15 @@ class State:
     def get_inputs(self):
         return self.inputs
 
-    def add_output(self, output_state):
+    def add_output(self, output_state, output_trace):
         self.outputs.append(output_state)
+        self.output_traces.append(output_trace)
 
     def get_outputs(self):
         return self.outputs
+
+    def get_traces(self):
+        return self.output_traces
 
     def is_equal(self, values):
         return self.values == values

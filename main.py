@@ -57,33 +57,39 @@ def create_dependencies(q_labels):
     return dependencies, constraints
 
 
-def assign_outputs(states, s, raw_outputs, constraints):
+def assign_outputs(states, s, raw_outputs, constraints, possible_traces):
     filtered_outputs = []
-    for raw_output in raw_outputs:
+    filtered_traces = []
+    for output_idx, raw_output in enumerate(raw_outputs):
         # Apply VC constraints
+        constraints_applied = False
         for influencer_idx in range(len(raw_output)):
-            # if raw_output[influencer_idx] == s.values[influencer_idx]:  # If the value was not modified
-            #     continue
             if influencer_idx not in constraints:
                 continue
             for c in constraints[influencer_idx]:
-                if raw_output[influencer_idx] == c[0]:
+                if raw_output[influencer_idx] == c[0] and raw_output[c[1]] != c[2]:
                     raw_output[c[1]] = c[2]
+                    constraints_applied = True
         if raw_output not in filtered_outputs:  # Check that constraint edit didn't create a state already in list
             filtered_outputs.append(raw_output)
+            if constraints_applied:
+                possible_traces[output_idx][1] = "Unstable state"
+                possible_traces[output_idx].append(["Constraint applied:", get_corresponding_state(states, raw_output)])
+            filtered_traces.append(possible_traces[output_idx])
+
+
     print("Possible outputs:")
-    for output in filtered_outputs:
-        print(output)
+    for trace, output in zip(filtered_traces, filtered_outputs):
+        print("output",output)
+        print("trace", trace)
         # Put corresponding states in this state's outputs
         state_exists = False
         for state in states:
-            # if state.get_id() == s.get_id():
-            #     continue
             if state.is_equal(output):
                 if state in s.outputs:
                     print("????")
                     quit()
-                s.add_output(state)
+                s.add_output(state, trace)
                 state_exists = True
                 break
         if not state_exists:
@@ -113,7 +119,6 @@ def set_unaffected_gradients_to_zero(state_values, dependencies):
 
 def fix_derivative_discrepancies(state, dependencies, original_state_values):
     change_has_been_made = False
-    print(state.values)
     for influenced_idx, value in enumerate(state.values):
         if influenced_idx % 2 == 0:  # Dependencies only apply to derivatives
             continue
@@ -150,7 +155,6 @@ def fix_derivative_discrepancies(state, dependencies, original_state_values):
                             discrepancy_directions.add(state.previous(influenced_idx))
                         else:
                             discrepancy_directions.add(state.current(influenced_idx))
-        print(discrepancy_directions)
 
         if len(discrepancy_directions) == 0:
             if state.current(influenced_idx) != '0':
@@ -235,9 +239,7 @@ def add_possible_range_value_changes(state_values, state, possible_values):
             continue
         if state_values[influenced_idx + 1] == '0':  # If derivative is 0, nothing is going to change
             continue
-        if value == 'max' and value == '0':  # Point values were already checked earlier
-            print("Why is there a point value check here?", state_values)
-            quit()
+        if value == 'max' or value == '0':  # Point values were already checked earlier
             continue
         if state_values[influenced_idx + 1] == '-':
             if state.previous(influenced_idx) is not None:
@@ -256,7 +258,7 @@ def add_possible_range_value_changes(state_values, state, possible_values):
 
 def determine_transitions(states, dependencies, constraints):
     for state in states:
-
+        trace = []
         state_values = state.values
         print("state ", state.get_id(), ":")
         print(state_values, "\n")
@@ -271,11 +273,14 @@ def determine_transitions(states, dependencies, constraints):
                 iter_values = copy.copy(new_state_values)
                 new_state_values, derivative_change_has_been_made = fix_derivative_discrepancies(State(iter_values),
                                                                                              dependencies, state_values)
+            trace.append(["Forced derivative changes: ", get_corresponding_state(states, new_state_values)])
             derivative_change_has_been_made = True
             point_value_change_has_been_made = False
         else:
             # - Check for point value changes
             new_state_values, point_value_change_has_been_made = make_point_value_changes(new_state_values, state)
+            if point_value_change_has_been_made:
+                trace.append(["Forced point value changes: ", get_corresponding_state(states, new_state_values)])
 
         # Step 2. Check for ambiguous derivative and range value changes:
         possible_values = {idx: set() for idx, value in enumerate(new_state_values)}
@@ -283,10 +288,15 @@ def determine_transitions(states, dependencies, constraints):
         # no point looking for range value changes.
         if not point_value_change_has_been_made and not derivative_change_has_been_made:
             # - Check for range value changes (if point changes were not made
-            add_possible_range_value_changes(new_state_values, state, possible_values)
+            add_possible_range_value_changes(state_values, state, possible_values)
             # - Check for derivative changes:
-            add_possible_derivative_changes(new_state_values, dependencies, state, possible_values)
+            add_possible_derivative_changes(state_values, dependencies, state, possible_values)
+        print(possible_values)
 
+        added_possibility = False
+        for p in possible_values:
+            if len(possible_values[p]) != 0:
+                added_possibility = True
         print("P", possible_values)
         # If derivative possible values contains '+' and '-', then the possibility of '0' should be added
         possible_values = {idx: possible_values[idx] if idx % 2 == 0 or len(possible_values[idx]) < 2 else possible_values[idx].union({'0'})
@@ -300,19 +310,45 @@ def determine_transitions(states, dependencies, constraints):
 
         # Step 3: Check for derivative and point values that MUST change (non-stable states)
         possible_final_outputs = []
-        for output in possible_outputs:
-            derivative_change_has_been_made = True
-            while derivative_change_has_been_made:
-                # - Set derivative to 0 if their dependencies are 0
-                output, derivative_change_has_been_made = fix_derivative_discrepancies(State(output), dependencies, state_values)
+        possible_traces = []
+        for idx, output in enumerate(possible_outputs):
+            # added_possibility = True if output != state_values else False
+            possible_traces.append(copy.copy(trace))
+            if added_possibility:
+                if output != state_values:
+                    possible_traces[idx].append(["Possible range value or derivative changes: ",
+                                                get_corresponding_state(states, output)])
+                else:
+                    possible_traces[idx].append(["State remains unchanged: ",
+                                                 get_corresponding_state(states, output)])
+            output, derivative_change_has_been_made = fix_derivative_discrepancies(State(output), dependencies, state_values)
+            if derivative_change_has_been_made:
+                while derivative_change_has_been_made:
+                    # - Set derivative to 0 if their dependencies are 0
+                    output, derivative_change_has_been_made = fix_derivative_discrepancies(State(output), dependencies, state_values)
+                if added_possibility:
+                    possible_traces[idx][-1][1] = "Unstable state"
+                    possible_traces[idx].append(
+                        ["Forced derivative changes: ", get_corresponding_state(states, output)])
+                else:
+                    if possible_traces[-1] != []:
+                        possible_traces[-1][-1][1] = "Unstable state"
+                    possible_traces[idx].append(
+                        ["Forced derivative changes: ", get_corresponding_state(states, output)])
             # - Check for point value changes
             # TODO: Just added this next line
             possible_final_outputs.append(output)
 
         print("Value possibilities:\n", possible_values)
-        assign_outputs(states, state, possible_final_outputs, constraints)
+        assign_outputs(states, state, possible_final_outputs, constraints, possible_traces)
         print("______________")
 
+
+def get_corresponding_state(states, state_values):
+    for state in states:
+        if state.is_equal(state_values):
+            return str(state.get_id())
+    return 'Unstable state'
 
 def get_unused_states(states):
     # Returns states that don't have outputs and which are not outputs
@@ -349,7 +385,6 @@ def run(args):
     print("############## GRAPH ENCODING ##############")
     for state in states:
         state.print_connections()
-        print(state.is_stable())
 
 
 if __name__ == '__main__':
